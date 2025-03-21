@@ -6,15 +6,15 @@
 ### V2
 
 ### V3
-
-- implement refresh token
+- Global Exception Handler
+- Implement refresh token
 
 ## TODO
-Global Exception Handler
-Refresh Token
+- Review V1-3 and summarise
+
 
 ## QUESTIONS
-- implement unit testing with test.json rsources
+- implement unit testing with test.json resources
 - AOP token parse methods
 - printing all filter chains upon setup
 - SecurityContextHolder.getContext().getAuthentication() == null?
