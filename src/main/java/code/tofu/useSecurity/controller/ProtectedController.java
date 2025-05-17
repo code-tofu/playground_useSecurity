@@ -11,4 +11,15 @@ public class ProtectedController {
     public ResponseEntity<String> mustBeAuthenticated() {
         return ResponseEntity.ok("PROTECTED API OK");
     }
+
+    @GetMapping(path="/write")
+    public ResponseEntity<String> mustHaveWriteAuthority() {
+        return ResponseEntity.ok("WRITE_AUTHORITY API OK");
+    }
+
+    @GetMapping(path="/delete")
+    public ResponseEntity<String> mustHaveDeleteAuthority() {
+        return ResponseEntity.ok("DELETE_AUTHORITY API OK");
+    }
+
 }

@@ -1,4 +1,9 @@
-- [ ] Default Spring Security AutoConfig
+# TODO
+
+## V0
+- [x] Default Spring Security AutoConfig
+
+## V1
 - [ ] JWT Implmentation from previous projects
 	- [ ] Security config for authentication  and authorisation for protected resources
 	- [ ] Signup, sign in endpoints and protected endpoints
@@ -10,7 +15,10 @@
 		- [ ] Validate Token based on Signing Key and Expiration Time
 - [ ] Printing all filter chains upon setup
 
-- [ ] Add  CustomAccessDeniedHandler and CustomAuthenticationEntryPoint
+
+
+
+- [ ] Add CustomAccessDeniedHandler and CustomAuthenticationEntryPoint
 - [ ] Throw exceptions for invalid JWTs instead and user the hanlder
 
 - [ ] Global Exception Handler
