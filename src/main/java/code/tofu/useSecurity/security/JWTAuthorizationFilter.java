@@ -31,14 +31,13 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
-        Optional<Claims> jwtClaims = jwtService.extractAndValidateToken(request);
-        if (jwtClaims.isEmpty()) {
+        Claims claims = jwtService.extractAndValidateToken(request);
+        if (null == claims) {
             log.info("JWT Claims is Empty");
             filterChain.doFilter(request, response);
             return;
         }
 
-        Claims claims = jwtClaims.get(); //CHECK OTHER CLAIMS IF THEY ARE ADDED
         UserDetails userDetails = userDetailsSvc.loadUserByUsername(claims.getSubject());
         if (null == userDetails) {
             log.info("User Details is Null");

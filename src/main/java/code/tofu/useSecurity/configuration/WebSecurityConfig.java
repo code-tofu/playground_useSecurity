@@ -1,5 +1,7 @@
 package code.tofu.useSecurity.configuration;
 
+import code.tofu.useSecurity.security.CustomAccessDeniedHandler;
+import code.tofu.useSecurity.security.CustomAuthenticationEntryPoint;
 import code.tofu.useSecurity.security.JWTAuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -58,6 +60,10 @@ public class WebSecurityConfig {
                         .requestMatchers("/write").hasAnyAuthority(String.valueOf(WRITE_AUTHORITY))
                         .requestMatchers("/delete").hasAnyAuthority(String.valueOf(DELETE_AUTHORITY),String.valueOf(WRITE_AUTHORITY))
                         .anyRequest().authenticated())
+                .exceptionHandling(exceptionHandling ->
+                        exceptionHandling.authenticationEntryPoint(new CustomAuthenticationEntryPoint()))
+                .exceptionHandling(exceptionHandling ->
+                        exceptionHandling.accessDeniedHandler(new CustomAccessDeniedHandler()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         return http.build();
     }

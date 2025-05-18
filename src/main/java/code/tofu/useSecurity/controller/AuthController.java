@@ -42,21 +42,21 @@ public class AuthController {
     @PostMapping("/signup/newUser")
     public ResponseEntity<String> signUpNewUser(@RequestBody CredentialsDTO signupRequest) throws JsonProcessingException {
         UserDetailsImpl savedUser = saveNewUserWithAuthority(signupRequest,PROTECTED_AUTHORITY);
-        log.info("New User Created with PROTECTED_AUTHORITY:{}", savedUser.getUserId());
+        log.info("New User Created with PROTECTED_AUTHORITY and ID:{}", savedUser.getUserId());
         return ResponseEntity.status(HttpStatus.CREATED).body("SIGN UP OK");
     }
 
     @PostMapping("/signup/newUser/wri")
     public ResponseEntity<String> signUpNewUserWithWriteAuthority(@RequestBody CredentialsDTO signupRequest) throws JsonProcessingException {
         UserDetailsImpl savedUser = saveNewUserWithAuthority(signupRequest,WRITE_AUTHORITY);
-        log.info("New User Created with WRITE_AUTHORITY:{}", savedUser.getUserId());
+        log.info("New User Created with WRITE_AUTHORITY and ID: {}", savedUser.getUserId());
         return ResponseEntity.status(HttpStatus.CREATED).body("SIGN UP OK: WRITE_AUTHORITY");
     }
 
     @PostMapping("/signup/newUser/del")
     public ResponseEntity<String> signUpNewUserWithDeleteAuthority(@RequestBody CredentialsDTO signupRequest) throws JsonProcessingException {
         UserDetailsImpl savedUser = saveNewUserWithAuthority(signupRequest,DELETE_AUTHORITY);
-        log.info("New User Created with DELETE_AUTHORITY:{}", savedUser.getUserId());
+        log.info("New User Created with DELETE_AUTHORITY and ID:{}", savedUser.getUserId());
         return ResponseEntity.status(HttpStatus.CREATED).body("SIGN UP OK: DELETE_AUTHORITY");
     }
 
@@ -65,7 +65,7 @@ public class AuthController {
 
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(signinRequest.getUsername(), signinRequest.getPassword()));
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        //SecurityContextHolder.getContext().setAuthentication(authentication);
 
         UserDetailsImpl user = (UserDetailsImpl) authentication.getPrincipal();
         log.info("User Authenticated:{}",user.getUserId());

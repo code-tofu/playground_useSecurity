@@ -35,7 +35,7 @@ public class UserDetailsImpl implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long userId;
 
-    //V1 authorities implementation: Role Based Single String
+    //Authorities Implementation - Role Based Single String
     @Override
     public List<SimpleGrantedAuthority> getAuthorities(){
         return List.of(new SimpleGrantedAuthority(this.authorities));

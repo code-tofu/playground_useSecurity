@@ -1,11 +1,12 @@
 package code.tofu.useSecurity.service;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import code.tofu.useSecurity.exception.InvalidJWTException;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.impl.DefaultClaims;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -23,6 +24,8 @@ public class JWTService {
 
     public static final String AUTHORIZATION_HEADER = "Authorization";
     public static final String BEARER_PREFIX = "Bearer ";
+    public static final String ISSUER_NAME = "tofucode";
+
 
     @Value("${jwt.secret.key}")
     private String secretKey;
@@ -31,40 +34,40 @@ public class JWTService {
     private int expireTimeMs;
 
 
-    public Optional<Claims> extractAndValidateToken(HttpServletRequest request) {
-        final String authHeader = request.getHeader(AUTHORIZATION_HEADER);
-        if (null == authHeader || !authHeader.startsWith(BEARER_PREFIX)) {
-            log.info("Jwt Token Does Not Exist");
-            return Optional.empty();
-        }
-        String jwtToken = authHeader.substring(7);
-
+    public Claims extractAndValidateToken(HttpServletRequest request) {
         try {
+            final String authHeader = request.getHeader(AUTHORIZATION_HEADER);
+            if(null == authHeader || !authHeader.startsWith(BEARER_PREFIX)){
+                throw new InvalidJWTException("Token does not start with Bearer Prefix");
+            }
+            String jwtToken = authHeader.substring(7);
+
             Claims jwtClaims = Jwts.parserBuilder()
+                    .requireIssuer(ISSUER_NAME)
                     .setSigningKey(getSecretKey())
                     .build()
                     .parseClaimsJws(jwtToken).getBody();
 
             if (null == jwtClaims.getSubject()) {
-                log.info("Jwt Token Subject is null");
-                return Optional.empty(); //validate subject
+                throw new InvalidJWTException("Jwt Token Subject is null");
             }
-            if (jwtClaims.getExpiration().before(new Date())) {
-                log.info("Jwt Token is expired");
-                return Optional.empty(); //validate expiry
-            }
-            return Optional.of(jwtClaims);
-        } catch (Exception exception) {
-            log.info("JWT Parse Exception: {}", exception.getMessage());
+
+            return jwtClaims;
+        } catch (JwtException | InvalidJWTException exception){
+            log.info("JWT Parse Exception - {}: {}",exception.getClass(), exception.getMessage());
+//            throw new ServletException("ServletException during JWT Parsing:", exception);
         /*
-        UnsupportedJwtException – if the claimsJws argument does not represent an Claims JWS
+        UnsupportedJwtException – if the claimsJws argument does not represent Claims JWS
         MalformedJwtException – if the claimsJws string is not a valid JWS
         SignatureException – if the claimsJws JWS signature validation fails
         ExpiredJwtException – if the specified JWT is a Claims JWT and the Claims has an expiration time before the time this method is invoked.
+        // JWT will already throw  JWT Parse Exception: JWT expired at 2024-05-19T04:55:31Z,
         IllegalArgumentException – if the claimsJws string is null or empty or only whitespace
+        MissingClaimException
+        IncorrectClaimException
         */
         }
-        return Optional.empty();
+        return null;
     }
 
     private Key getSecretKey() {
@@ -76,6 +79,7 @@ public class JWTService {
         log.info("Generating Token for UserId:{}", user.getUserId());
         Claims claims = new DefaultClaims();
         claims.setSubject(user.getUsername());
+        claims.setIssuer(ISSUER_NAME);
         claims.putIfAbsent("role", user.getAuthorities().get(0).toString());
         return Jwts
                 .builder()
@@ -84,5 +88,14 @@ public class JWTService {
                 .setExpiration(new Date(System.currentTimeMillis() + expireTimeMs)) //slightly off?
                 .signWith(getSecretKey(), SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    //Proposed alternative Bearer extract method
+    private String recoverToken(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null) {
+            return null;
+        }
+        return authHeader.replace("Bearer ", ""); //should check if Bearer is actually replaced
     }
 }
