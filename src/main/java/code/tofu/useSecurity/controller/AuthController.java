@@ -1,27 +1,26 @@
 package code.tofu.useSecurity.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import code.tofu.useSecurity.enums.Role;
+import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import code.tofu.useSecurity.dto.CredentialsDTO;
-import code.tofu.useSecurity.dto.SignInResponseDTO;
+import code.tofu.useSecurity.dto.AuthResponseDTO;
 import code.tofu.useSecurity.entity.UserDetailsImpl;
-import code.tofu.useSecurity.enums.Authority;
 import code.tofu.useSecurity.service.JWTService;
 import code.tofu.useSecurity.service.UserDetailsServiceImpl;
-import static code.tofu.useSecurity.enums.Authority.*;
+import static code.tofu.useSecurity.enums.Role.*;
 
 @RestController
 @Slf4j
@@ -39,50 +38,68 @@ public class AuthController {
     @Autowired
     PasswordEncoder passwordEncoder;
 
-    @PostMapping("/signup/newUser")
-    public ResponseEntity<String> signUpNewUser(@RequestBody CredentialsDTO signupRequest) throws JsonProcessingException {
-        UserDetailsImpl savedUser = saveNewUserWithAuthority(signupRequest,PROTECTED_AUTHORITY);
-        log.info("New User Created with PROTECTED_AUTHORITY and ID:{}", savedUser.getUserId());
-        return ResponseEntity.status(HttpStatus.CREATED).body("SIGN UP OK");
+    @PostMapping("/signup/newUser/creator")
+    public ResponseEntity<String> signUpNewUserCreator(@RequestBody CredentialsDTO signupRequest){
+        UserDetailsImpl savedUser = saveNewUserWithRole(signupRequest,CREATOR);
+        log.info("New User Created with CREATOR Role:{}", savedUser.getUserId());
+        return ResponseEntity.status(HttpStatus.CREATED).body("SIGN UP OK"); 
     }
 
-    @PostMapping("/signup/newUser/wri")
-    public ResponseEntity<String> signUpNewUserWithWriteAuthority(@RequestBody CredentialsDTO signupRequest) throws JsonProcessingException {
-        UserDetailsImpl savedUser = saveNewUserWithAuthority(signupRequest,WRITE_AUTHORITY);
-        log.info("New User Created with WRITE_AUTHORITY and ID: {}", savedUser.getUserId());
-        return ResponseEntity.status(HttpStatus.CREATED).body("SIGN UP OK: WRITE_AUTHORITY");
+    @PostMapping("/signup/newUser/viewer")
+    public ResponseEntity<String> signUpNewUserViewer(@RequestBody CredentialsDTO signupRequest){
+        UserDetailsImpl savedUser = saveNewUserWithRole(signupRequest,VIEWER);
+        log.info("New User Created with VIEWER Role:{}", savedUser.getUserId());
+        return ResponseEntity.status(HttpStatus.CREATED).body("SIGN UP OK: VIEWER");  
     }
 
-    @PostMapping("/signup/newUser/del")
-    public ResponseEntity<String> signUpNewUserWithDeleteAuthority(@RequestBody CredentialsDTO signupRequest) throws JsonProcessingException {
-        UserDetailsImpl savedUser = saveNewUserWithAuthority(signupRequest,DELETE_AUTHORITY);
-        log.info("New User Created with DELETE_AUTHORITY and ID:{}", savedUser.getUserId());
-        return ResponseEntity.status(HttpStatus.CREATED).body("SIGN UP OK: DELETE_AUTHORITY");
+    @PostMapping("/signup/newUser/admin")
+    public ResponseEntity<String> signUpNewUserAdmin(@RequestBody CredentialsDTO signupRequest){
+        UserDetailsImpl savedUser = saveNewUserWithRole(signupRequest,ADMIN);
+        log.info("New User Created with ADMIN Role:{}", savedUser.getUserId());
+        return ResponseEntity.status(HttpStatus.CREATED).body("SIGN UP OK: ADMIN");  
     }
 
     @PostMapping("/signin")
-    public ResponseEntity<SignInResponseDTO> signin(@RequestBody CredentialsDTO signinRequest) throws JsonProcessingException {
+    public ResponseEntity<AuthResponseDTO> signin(@RequestBody CredentialsDTO signinRequest){
 
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(signinRequest.getUsername(), signinRequest.getPassword()));
-        //SecurityContextHolder.getContext().setAuthentication(authentication);
 
         UserDetailsImpl user = (UserDetailsImpl) authentication.getPrincipal();
         log.info("User Authenticated:{}",user.getUserId());
 
-        //Authorities implementation: Role Based Single String
-        SignInResponseDTO response = new SignInResponseDTO(jwtService.generateToken(user),
-                user.getAuthorities().get(0).toString());
+        //Authorities implementation: Role Based
+        AuthResponseDTO response = new AuthResponseDTO(jwtService.generateToken(user), jwtService.generateRefreshToken(user),
+                String.valueOf(user.getRole()));
 
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/refresh")
+    public ResponseEntity<Object> refreshToken(HttpServletRequest httpRequest) {
+        Claims claims = jwtService.extractAndValidateToken(httpRequest);
+//        if (null == claims) {
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh Token Required in Auth Header");
+//        }
+        UserDetailsImpl user = (UserDetailsImpl) userDetailsService.loadUserById(claims.getSubject());
+        if (null == user) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh Token Not Valid");
+        }
+            log.info("User JWT Token Refreshed:{}",user.getUserId());
 
-    public UserDetailsImpl saveNewUserWithAuthority(CredentialsDTO credentials, Authority authority){
+        final String refreshToken = httpRequest.getHeader(HttpHeaders.AUTHORIZATION).substring(7); //already validated
+        AuthResponseDTO response = new AuthResponseDTO(jwtService.generateToken(user), refreshToken,
+                String.valueOf(user.getRole()));
+        return ResponseEntity.ok(response);
+    }
+
+
+    //to avoid circular dependency with passwordEncoder, unless add another service layer between controller and various services
+    public UserDetailsImpl saveNewUserWithRole(CredentialsDTO credentials, Role role){
         UserDetails newUser = UserDetailsImpl.builder()
                 .username(credentials.getUsername()).password(passwordEncoder.encode(credentials.getPassword()))
                 .enabled(true).accountNonLocked(true).accountNonExpired(true).credentialsNonExpired(true)
-                .authorities(String.valueOf(authority))
+                .role(role)
                 .build();
         return (UserDetailsImpl) userDetailsService.createNewUser(newUser);
     }

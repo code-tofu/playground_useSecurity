@@ -38,7 +38,7 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
             return;
         }
 
-        UserDetails userDetails = userDetailsSvc.loadUserByUsername(claims.getSubject());
+        UserDetails userDetails = userDetailsSvc.loadUserById(claims.getSubject());
         if (null == userDetails) {
             log.info("User Details is Null");
             filterChain.doFilter(request, response);
@@ -46,7 +46,7 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
         }
 
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                userDetails, null,userDetails.getAuthorities() );
+                userDetails, null,userDetails.getAuthorities() ); //list of authorities created in impl class
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 
         filterChain.doFilter(request, response);

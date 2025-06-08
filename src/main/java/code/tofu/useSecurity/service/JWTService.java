@@ -31,8 +31,10 @@ public class JWTService {
     private String secretKey;
 
     @Value("${jwt.expiration.ms}")
-    private int expireTimeMs;
+    private long expireTimeMs;
 
+    @Value("${jwt.refresh-expiration.ms:604800000}")
+    private long refreshExpireTimeMs;
 
     public Claims extractAndValidateToken(HttpServletRequest request) {
         try {
@@ -76,26 +78,27 @@ public class JWTService {
     }
 
     public String generateToken(UserDetailsImpl user) {
-        log.info("Generating Token for UserId:{}", user.getUserId());
+        log.info("Generating Token for UserId:{}",user.getUserId());
         Claims claims = new DefaultClaims();
-        claims.setSubject(user.getUsername());
-        claims.setIssuer(ISSUER_NAME);
-        claims.putIfAbsent("role", user.getAuthorities().get(0).toString());
+        claims.putIfAbsent("role",user.getRole());
+        return buildToken(user,claims, expireTimeMs);
+    }
+    public String generateRefreshToken(UserDetailsImpl user) {
+        log.info("Generating Refresh Token for UserId:{}",user.getUserId());
+        Claims claims = new DefaultClaims();
+        return buildToken(user, claims, refreshExpireTimeMs);
+    }
+
+    public String buildToken(UserDetailsImpl user, Claims claims, Long expiration){
         return Jwts
                 .builder()
                 .setClaims(claims) //overrides setSubject, since setSubject is a convenience method
+                .setSubject(Long.toString(user.getUserId())) //use UserId instead, more secure, more performant since PRIKEY
+                .setIssuer(ISSUER_NAME)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + expireTimeMs)) //slightly off?
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSecretKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    //Proposed alternative Bearer extract method
-    private String recoverToken(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null) {
-            return null;
-        }
-        return authHeader.replace("Bearer ", ""); //should check if Bearer is actually replaced
-    }
 }

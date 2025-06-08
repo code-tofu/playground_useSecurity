@@ -1,5 +1,6 @@
 package code.tofu.useSecurity.configuration;
 
+import code.tofu.useSecurity.enums.Role;
 import code.tofu.useSecurity.security.CustomAccessDeniedHandler;
 import code.tofu.useSecurity.security.CustomAuthenticationEntryPoint;
 import code.tofu.useSecurity.security.JWTAuthorizationFilter;
@@ -56,14 +57,20 @@ public class WebSecurityConfig {
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/signup/newUser/**").permitAll()
                         .requestMatchers("/signin").permitAll()
+                        .requestMatchers("/refresh").permitAll()
+                        .requestMatchers("/except").permitAll()
+
                         .requestMatchers("/protected").authenticated()
+                        //AUTHORITY BASED
+//                        .requestMatchers("/protected").hasAnyAuthority(String.valueOf(PROTECTED_AUTHORITY))
                         .requestMatchers("/write").hasAnyAuthority(String.valueOf(WRITE_AUTHORITY))
-                        .requestMatchers("/delete").hasAnyAuthority(String.valueOf(DELETE_AUTHORITY),String.valueOf(WRITE_AUTHORITY))
+                        .requestMatchers("/delete").hasAnyAuthority(String.valueOf(DELETE_AUTHORITY))
+                        //OR not AND - use hasAuthorityInstead
                         .anyRequest().authenticated())
                 .exceptionHandling(exceptionHandling ->
-                        exceptionHandling.authenticationEntryPoint(new CustomAuthenticationEntryPoint()))
-                .exceptionHandling(exceptionHandling ->
-                        exceptionHandling.accessDeniedHandler(new CustomAccessDeniedHandler()))
+                        exceptionHandling
+                                .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
+                                .accessDeniedHandler(new CustomAccessDeniedHandler()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         return http.build();
     }

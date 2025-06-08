@@ -6,6 +6,6 @@ CREATE TABLE user_details (
     account_non_locked BOOLEAN NOT NULL,
     credentials_non_expired BOOLEAN NOT NULL,
     enabled BOOLEAN NOT NULL,
-    authorities ENUM("PROTECTED_AUTHORITY","READ_AUTHORITY","WRITE_AUTHORITY","UPDATE_AUTHORITY","DELETE_AUTHORITY") NOT NULL,
     PRIMARY KEY (user_id)
 );
+

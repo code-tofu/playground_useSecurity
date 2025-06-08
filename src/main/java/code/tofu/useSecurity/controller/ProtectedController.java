@@ -28,4 +28,6 @@ public class ProtectedController {
         throw new CustomControllerException("Exception Thrown to Be Caught by GlobalExceptionHandler");
     }
 
+
+
 }

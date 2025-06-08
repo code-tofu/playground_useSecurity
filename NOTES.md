@@ -119,4 +119,5 @@ if passwordEncoder is included in userDetailsServiceImpl:
 - authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request))?
 - Is Password encoder is always a new instance? What if we use secureRandom
 - pokemart/dubstep not used? public Boolean validateToken(String jwtStr, UserDetails userDetails)
+- what's really the difference between processing a normal jwt token and a refresh token
 
